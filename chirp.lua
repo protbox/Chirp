@@ -44,6 +44,44 @@ local function build_bandlimited_pulse_for_frequency(duty, freq, sample_rate, ta
     return wave
 end
 
+local function build_bandlimited_sawtooth_for_frequency(freq, sample_rate, table_size)
+    local nyquist = sample_rate / 2
+    local k_max = math.floor(nyquist / freq)
+    if k_max < 1 then
+        k_max = 1
+    end
+
+    local wave = {}
+    for i = 1, table_size do
+        wave[i] = 0
+    end
+
+    for i = 1, table_size do
+        local t = (i - 1) / table_size
+        local sum = 0
+        for k = 1, k_max do
+            local ak = (2 / (k * math.pi)) * ((-1)^(k+1))
+            sum = sum + ak * math.sin(2 * math.pi * k * t)
+        end
+        wave[i] = sum
+    end
+
+    local max_amp = 0
+    for i = 1, table_size do
+        local a = math.abs(wave[i])
+        if a > max_amp then
+            max_amp = a
+        end
+    end
+    if max_amp > 0 then
+        for i = 1, table_size do
+            wave[i] = wave[i] / max_amp
+        end
+    end
+
+    return wave
+end
+
 local function clamp_sample(v)
     if v > 1 then return 1
     elseif v < -1 then return -1
@@ -84,7 +122,7 @@ end
 -- 0.25 for 25%
 -- 0.125 for 12.5%
 
-function chirp.new_wave(t, key, duty_cycle)
+function chirp.new_wave(t, key, duty_cycle, volume)
 	assert(key ~= nil, "chirp.new_wave expects at least a wave type and a key")
 
 	local wt = "wt_" .. t
@@ -96,7 +134,7 @@ function chirp.new_wave(t, key, duty_cycle)
 		error("Square was requested, but no duty cycle was passed")
 	end
 
-	return chirp.generate_waveform(t, note_to_frequency(key), duty_cycle or false)
+	return chirp.generate_waveform(t, note_to_frequency(key), duty_cycle or false, volume or 0.8)
 end
 
 function chirp.wt_triangle(phase)
@@ -127,6 +165,11 @@ function chirp.wt_square(phase, wave_table, table_size)
     return wave_table[idx]
 end
 
+function chirp.wt_sawtooth(phase, wave_table, table_size)
+    local idx = math.floor(phase * table_size) + 1
+    return wave_table[idx]
+end
+
 function chirp.generate_waveform(wave_type, frequency, duty_cycle, duration, volume)
     local duration = duration or 1
     local sr = sample_rate
@@ -136,11 +179,13 @@ function chirp.generate_waveform(wave_type, frequency, duty_cycle, duration, vol
     local dt = frequency / sr
     local phase = 0
 
-    local vol = volume or 1
+    local vol = volume or 0.8 -- 1 is a bit loud, imho
 
     local wave_table = nil
     if wave_type == "square" then
         wave_table = build_bandlimited_pulse_for_frequency(duty_cycle, frequency, sr, table_size)
+    elseif wave_type == "sawtooth" then
+        wave_table = build_bandlimited_sawtooth_for_frequency(frequency, sr, table_size)
     end
 
     for i = 0, total_samples - 1 do
@@ -148,6 +193,8 @@ function chirp.generate_waveform(wave_type, frequency, duty_cycle, duration, vol
 
         if wave_type == "square" then
             sample_val = chirp.wt_square(phase, wave_table, table_size)
+        elseif wave_type == "sawtooth" then
+            sample_val = chirp.wt_sawtooth(phase, wave_table, table_size)
         elseif wave_type == "triangle" then
             sample_val = chirp.wt_triangle(phase)
         elseif wave_type == "noise" then

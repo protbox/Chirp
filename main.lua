@@ -15,7 +15,15 @@ local notes = {
 	[11] = love.audio.newSource(chirp.new_wave("triangle", "F#3"), "static"),
 	[12] = love.audio.newSource(chirp.new_wave("triangle", "G3"), "static"),
 	[13] = love.audio.newSource(chirp.new_wave("triangle", "A3"), "static"),
-	[14] = love.audio.newSource(chirp.new_wave("triangle", "B3"), "static")
+	[14] = love.audio.newSource(chirp.new_wave("triangle", "B3"), "static"),
+
+	[15] = love.audio.newSource(chirp.new_wave("sawtooth", "C4"), "static"),
+	[16] = love.audio.newSource(chirp.new_wave("sawtooth", "D4"), "static"),
+	[17] = love.audio.newSource(chirp.new_wave("sawtooth", "E4"), "static"),
+	[18] = love.audio.newSource(chirp.new_wave("sawtooth", "F#4"), "static"),
+	[19] = love.audio.newSource(chirp.new_wave("sawtooth", "G4"), "static"),
+	[20] = love.audio.newSource(chirp.new_wave("sawtooth", "A4"), "static"),
+	[21] = love.audio.newSource(chirp.new_wave("sawtooth", "B4"), "static"),
 }
 
 local keys = {
@@ -35,7 +43,15 @@ local keys = {
 	f = 11,
 	g = 12,
 	h = 13,
-	j = 14
+	j = 14,
+
+	q = 15,
+	w = 16,
+	e = 17,
+	r = 18,
+	t = 19,
+	y = 20,
+	u = 21
 }
 
 function love.keypressed(key, sc)
