@@ -122,7 +122,7 @@ end
 -- 0.25 for 25%
 -- 0.125 for 12.5%
 
-function chirp.new_wave(t, key, duty_cycle, volume)
+function chirp.new_wave(t, key, duty_cycle, volume, duration)
 	assert(key ~= nil, "chirp.new_wave expects at least a wave type and a key")
 
 	local wt = "wt_" .. t
@@ -134,7 +134,7 @@ function chirp.new_wave(t, key, duty_cycle, volume)
 		error("Square was requested, but no duty cycle was passed")
 	end
 
-	return chirp.generate_waveform(t, note_to_frequency(key), duty_cycle or false, volume or 0.8)
+	return chirp.generate_waveform(t, note_to_frequency(key), duty_cycle or false, duration or 1, volume or 0.8)
 end
 
 function chirp.wt_triangle(phase)
@@ -175,40 +175,53 @@ function chirp.generate_waveform(wave_type, frequency, duty_cycle, duration, vol
     local sr = sample_rate
     local total_samples = math.floor(duration * sr)
     local sound_data = love.sound.newSoundData(total_samples, sr, 16, 1)
-
     local dt = frequency / sr
-    local phase = 0
-
     local vol = volume or 0.8 -- 1 is a bit loud, imho
 
-    local wave_table = nil
-    if wave_type == "square" then
-        wave_table = build_bandlimited_pulse_for_frequency(duty_cycle, frequency, sr, table_size)
-    elseif wave_type == "sawtooth" then
-        wave_table = build_bandlimited_sawtooth_for_frequency(frequency, sr, table_size)
-    end
+    if wave_type == "noise" then
+        local noise_phase = 0
+        local noise_sample = chirp.wt_noise()
 
-    for i = 0, total_samples - 1 do
-        local sample_val = 0
+        for i = 0, total_samples - 1 do
+            if noise_phase >= 1 then
+                noise_sample = chirp.wt_noise()
+                noise_phase = noise_phase - 1
+            end
 
+            local sample_val = noise_sample * vol
+            sample_val = clamp_sample(sample_val)
+            sound_data:setSample(i, sample_val)
+            noise_phase = noise_phase + dt
+        end
+    else
+        local phase = 0
+        local wave_table = nil
         if wave_type == "square" then
-            sample_val = chirp.wt_square(phase, wave_table, table_size)
+            wave_table = build_bandlimited_pulse_for_frequency(duty_cycle, frequency, sr, table_size)
         elseif wave_type == "sawtooth" then
-            sample_val = chirp.wt_sawtooth(phase, wave_table, table_size)
-        elseif wave_type == "triangle" then
-            sample_val = chirp.wt_triangle(phase)
-        elseif wave_type == "noise" then
-            sample_val = chirp.wt_noise()
-        else
-            sample_val = 0
+            wave_table = build_bandlimited_sawtooth_for_frequency(frequency, sr, table_size)
         end
 
-        sample_val = clamp_sample(sample_val * vol)
-        sound_data:setSample(i, sample_val)
+        for i = 0, total_samples - 1 do
+            local sample_val = 0
 
-        phase = phase + dt
-        if phase >= 1 then
-            phase = phase - 1
+            if wave_type == "square" then
+                sample_val = chirp.wt_square(phase, wave_table, table_size)
+            elseif wave_type == "sawtooth" then
+                sample_val = chirp.wt_sawtooth(phase, wave_table, table_size)
+            elseif wave_type == "triangle" then
+                sample_val = chirp.wt_triangle(phase)
+            else
+                sample_val = 0
+            end
+
+            sample_val = clamp_sample(sample_val * vol)
+            sound_data:setSample(i, sample_val)
+
+            phase = phase + dt
+            if phase >= 1 then
+                phase = phase - 1
+            end
         end
     end
 

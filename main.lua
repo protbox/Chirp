@@ -17,13 +17,14 @@ local notes = {
 	[13] = love.audio.newSource(chirp.new_wave("triangle", "A3"), "static"),
 	[14] = love.audio.newSource(chirp.new_wave("triangle", "B3"), "static"),
 
-	[15] = love.audio.newSource(chirp.new_wave("sawtooth", "C4"), "static"),
-	[16] = love.audio.newSource(chirp.new_wave("sawtooth", "D4"), "static"),
-	[17] = love.audio.newSource(chirp.new_wave("sawtooth", "E4"), "static"),
-	[18] = love.audio.newSource(chirp.new_wave("sawtooth", "F#4"), "static"),
-	[19] = love.audio.newSource(chirp.new_wave("sawtooth", "G4"), "static"),
-	[20] = love.audio.newSource(chirp.new_wave("sawtooth", "A4"), "static"),
-	[21] = love.audio.newSource(chirp.new_wave("sawtooth", "B4"), "static"),
+	-- noise is pretty loud, so I'm lowering it to 0.2
+	[15] = love.audio.newSource(chirp.new_wave("noise", "C7", false, 0.2), "static"),
+	[16] = love.audio.newSource(chirp.new_wave("noise", "D7", false, 0.2), "static"),
+	[17] = love.audio.newSource(chirp.new_wave("noise", "E7", false, 0.2), "static"),
+	[18] = love.audio.newSource(chirp.new_wave("noise", "F#7", false, 0.2), "static"),
+	[19] = love.audio.newSource(chirp.new_wave("noise", "G7", false, 0.2), "static"),
+	[20] = love.audio.newSource(chirp.new_wave("noise", "A7", false, 0.2), "static"),
+	[21] = love.audio.newSource(chirp.new_wave("noise", "B7", false, 0.2), "static"),
 }
 
 local keys = {
@@ -45,6 +46,7 @@ local keys = {
 	h = 13,
 	j = 14,
 
+	-- noise
 	q = 15,
 	w = 16,
 	e = 17,
