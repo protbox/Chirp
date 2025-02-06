@@ -9,7 +9,7 @@ local c5_square = chirp.new_wave("square", "C5", 0.125) -- generates a NES-like 
 local as4_sawtooth = chirp.new_wave("sawtooth", "A#4") -- no other wave types require a duty cycle
 local g2_triangle = chirp.new_wave("triangle", "G2")
 
--- to make them player, simply pass the sound data into love.audio.newSource
+-- to make them play, simply pass the sound data into love.audio.newSource
 local c5_square_src = love.audio.newSource(c5_square)
 c5_square_src:play()
 ```
