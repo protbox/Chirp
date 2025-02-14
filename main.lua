@@ -1,30 +1,63 @@
 local chirp = require "chirp"
 
-local notes = {
-	[1] = love.audio.newSource(chirp.new_wave("square", "C5", 0.25), "static"),
-	[2] = love.audio.newSource(chirp.new_wave("square", "D5", 0.25), "static"),
-	[3] = love.audio.newSource(chirp.new_wave("square", "E5", 0.25), "static"),
-	[4] = love.audio.newSource(chirp.new_wave("square", "F#5", 0.25), "static"),
-	[5] = love.audio.newSource(chirp.new_wave("square", "G5", 0.25), "static"),
-	[6] = love.audio.newSource(chirp.new_wave("square", "A5", 0.25), "static"),
-	[7] = love.audio.newSource(chirp.new_wave("square", "B5", 0.25), "static"),
+-- simulates a 25% duty cycle
+local wave_25 = {
+  15, 15, 15, 15, 15, 15, 15, 15,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+}
 
-	[8] = love.audio.newSource(chirp.new_wave("triangle", "C3"), "static"),
-	[9] = love.audio.newSource(chirp.new_wave("triangle", "D3"), "static"),
-	[10] = love.audio.newSource(chirp.new_wave("triangle", "E3"), "static"),
-	[11] = love.audio.newSource(chirp.new_wave("triangle", "F#3"), "static"),
-	[12] = love.audio.newSource(chirp.new_wave("triangle", "G3"), "static"),
-	[13] = love.audio.newSource(chirp.new_wave("triangle", "A3"), "static"),
-	[14] = love.audio.newSource(chirp.new_wave("triangle", "B3"), "static"),
+-- simulates a 12.5% duty cycle
+local wave_12_5 = {
+  15, 15, 15, 15,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0
+}
+
+-- iconic bass sound
+local fat_bass = {
+  15, 15, 15, 15, 15, 15, 15, 15,   -- sustained high at start
+  13, 12, 11, 10,  9,  8,  7,  6,   -- gradual dip
+   6,  7,  8,  9, 10, 11, 12, 13,   -- ramp back up
+  15, 15, 15, 15, 15, 15, 15, 15    -- sustained high at end
+}
+
+-- simulates a square wave
+local wave_50 = {
+  15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+}
+
+local first_tbl = { waveform = wave_50, volume_shift = 1 }
+local bass_tbl = { waveform = fat_bass, volume_shift = 0 }
+
+-- gameboy example
+local notes = {
+	[1] = love.audio.newSource(chirp.new_wave("gameboy", "C4", 0.125, 1, 1, first_tbl), "static"),
+	[2] = love.audio.newSource(chirp.new_wave("gameboy", "D4", 0.125, 1, 1, first_tbl), "static"),
+	[3] = love.audio.newSource(chirp.new_wave("gameboy", "E4", 0.125, 1, 1, first_tbl), "static"),
+	[4] = love.audio.newSource(chirp.new_wave("gameboy", "F#4", 0.125, 1, 1, first_tbl), "static"),
+	[5] = love.audio.newSource(chirp.new_wave("gameboy", "G4", 0.125, 1, 1, first_tbl), "static"),
+	[6] = love.audio.newSource(chirp.new_wave("gameboy", "A4", 0.125, 1, 1, first_tbl), "static"),
+	[7] = love.audio.newSource(chirp.new_wave("gameboy", "B4", 0.125, 1, 1, first_tbl), "static"),
+
+	[8] = love.audio.newSource(chirp.new_wave("gameboy", "C2", nil, 1, 1, bass_tbl), "static"),
+	[9] = love.audio.newSource(chirp.new_wave("gameboy", "D2", nil, 1, 1, bass_tbl), "static"),
+	[10] = love.audio.newSource(chirp.new_wave("gameboy", "E2", nil, 1, 1, bass_tbl), "static"),
+	[11] = love.audio.newSource(chirp.new_wave("gameboy", "F#2", nil, 1, 1, bass_tbl), "static"),
+	[12] = love.audio.newSource(chirp.new_wave("gameboy", "G2", nil, 1, 1, bass_tbl), "static"),
+	[13] = love.audio.newSource(chirp.new_wave("gameboy", "A2", nil, 1, 1, bass_tbl), "static"),
+	[14] = love.audio.newSource(chirp.new_wave("gameboy", "B2", nil, 1, 1, bass_tbl), "static"),
 
 	-- noise is pretty loud, so I'm lowering it to 0.2
-	[15] = love.audio.newSource(chirp.new_wave("noise", "C7", false, 0.2), "static"),
-	[16] = love.audio.newSource(chirp.new_wave("noise", "D7", false, 0.2), "static"),
-	[17] = love.audio.newSource(chirp.new_wave("noise", "E7", false, 0.2), "static"),
-	[18] = love.audio.newSource(chirp.new_wave("noise", "F#7", false, 0.2), "static"),
-	[19] = love.audio.newSource(chirp.new_wave("noise", "G7", false, 0.2), "static"),
-	[20] = love.audio.newSource(chirp.new_wave("noise", "A7", false, 0.2), "static"),
-	[21] = love.audio.newSource(chirp.new_wave("noise", "B7", false, 0.2), "static"),
+	[15] = love.audio.newSource(chirp.new_wave("noise", "C7", nil, 1, 0.2), "static"),
+	[16] = love.audio.newSource(chirp.new_wave("noise", "D7", nil, 1, 0.2), "static"),
+	[17] = love.audio.newSource(chirp.new_wave("noise", "E7", nil, 1, 0.2), "static"),
+	[18] = love.audio.newSource(chirp.new_wave("noise", "F#7", nil, 1, 0.2), "static"),
+	[19] = love.audio.newSource(chirp.new_wave("noise", "G7", nil, 1, 0.2), "static"),
+	[20] = love.audio.newSource(chirp.new_wave("noise", "A7", nil, 1, 0.2), "static"),
+	[21] = love.audio.newSource(chirp.new_wave("noise", "B7", nil, 1, 0.2), "static"),
 }
 
 local keys = {

@@ -122,19 +122,24 @@ end
 -- 0.25 for 25%
 -- 0.125 for 12.5%
 
-function chirp.new_wave(t, key, duty_cycle, volume, duration)
-	assert(key ~= nil, "chirp.new_wave expects at least a wave type and a key")
+function chirp.new_wave(t, key, duty_cycle, duration, volume, params)
+    assert(key ~= nil, "chirp.new_wave expects at least a wave type and a key")
+    
+    if t == "gameboy" then
+        if not (params and params.waveform and #params.waveform >= 32) then
+            error("Gameboy wave requires a 'waveform' table of at least 32 samples in params")
+        end
+    else
+        local wt = "wt_" .. t
+        if not chirp[wt] then
+            error("No such wave type:" .. wt)
+        end
+        if t == "square" and not duty_cycle then
+            error("Square was requested, but no duty cycle was passed")
+        end
+    end
 
-	local wt = "wt_" .. t
-	if not chirp[wt] then
-		error("No such wave type:" .. wt)
-	end
-
-	if t == "square" and not duty_cycle then
-		error("Square was requested, but no duty cycle was passed")
-	end
-
-	return chirp.generate_waveform(t, note_to_frequency(key), duty_cycle or false, duration or 1, volume or 0.8)
+    return chirp.generate_waveform(t, note_to_frequency(key), duty_cycle or false, duration or 1, volume or 0.8, params)
 end
 
 function chirp.wt_triangle(phase)
@@ -170,28 +175,44 @@ function chirp.wt_sawtooth(phase, wave_table, table_size)
     return wave_table[idx]
 end
 
-function chirp.generate_waveform(wave_type, frequency, duty_cycle, duration, volume)
-    local duration = duration or 1
+function chirp.generate_waveform(wave_type, frequency, duty_cycle, duration, volume, params)
     local sr = sample_rate
     local total_samples = math.floor(duration * sr)
     local sound_data = love.sound.newSoundData(total_samples, sr, 16, 1)
     local dt = frequency / sr
-    local vol = volume or 0.8 -- 1 is a bit loud, imho
+    local vol = volume
 
     if wave_type == "noise" then
         local noise_phase = 0
         local noise_sample = chirp.wt_noise()
-
         for i = 0, total_samples - 1 do
             if noise_phase >= 1 then
                 noise_sample = chirp.wt_noise()
                 noise_phase = noise_phase - 1
             end
-
-            local sample_val = noise_sample * vol
-            sample_val = clamp_sample(sample_val)
+            local sample_val = clamp_sample(noise_sample * vol)
             sound_data:setSample(i, sample_val)
             noise_phase = noise_phase + dt
+        end
+    elseif wave_type == "gameboy" then
+        -- volume shift 0-3
+        local waveform = params.waveform
+        local volume_shift = params.volume_shift or 0
+        local phase = 0
+        for i = 0, total_samples - 1 do
+            -- cycle through 32 samples based on phase.
+            local sample_index = math.floor(phase * 32) % 32
+            local sample = waveform[sample_index + 1] or 0
+            sample = math.floor(sample / (2 ^ volume_shift))
+            -- normalize 0–15 to -1 to 1
+            -- I believe gameboy output is centered around 8?
+            sample = (sample - 8) / 8
+            sample = clamp_sample(sample * vol)
+            sound_data:setSample(i, sample)
+            phase = phase + dt
+            if phase >= 1 then
+                phase = phase - 1
+            end
         end
     else
         local phase = 0
@@ -201,10 +222,8 @@ function chirp.generate_waveform(wave_type, frequency, duty_cycle, duration, vol
         elseif wave_type == "sawtooth" then
             wave_table = build_bandlimited_sawtooth_for_frequency(frequency, sr, table_size)
         end
-
         for i = 0, total_samples - 1 do
             local sample_val = 0
-
             if wave_type == "square" then
                 sample_val = chirp.wt_square(phase, wave_table, table_size)
             elseif wave_type == "sawtooth" then
@@ -214,10 +233,8 @@ function chirp.generate_waveform(wave_type, frequency, duty_cycle, duration, vol
             else
                 sample_val = 0
             end
-
             sample_val = clamp_sample(sample_val * vol)
             sound_data:setSample(i, sample_val)
-
             phase = phase + dt
             if phase >= 1 then
                 phase = phase - 1
