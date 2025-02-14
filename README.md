@@ -1,40 +1,51 @@
-chirp is a library for LÖVE that simplifies the process of generating band-limited waves (square and sawtooth). It can also generate a 16-step triangle and noise.
-
-It only has one function right now, which is `new_wave`. To use it, you'd do something like:
+chirp is a library for LÖVE that simplifies the process of generating waves (or chiptune sounds). There are 2 core instances to choose from which emulate the NES (band-limited) and Gameboy (wave tables) sound chips. There's also a noise channel.
+To set them up, simply do:
 
 ```lua
 local chirp = require "chirp"
 
-local c5_square = chirp.new_wave("square", "C5", 0.125) -- generates a NES-like 12.5% pulse sound data
-local as4_sawtooth = chirp.new_wave("sawtooth", "A#4") -- no other wave types require a duty cycle
-local g2_triangle = chirp.new_wave("triangle", "G2")
-local d7_noise = chirp.new_wave("noise", "D2", false, 0.2) -- false for duty cycle, 0.2 for volume, because noise is very loud by default
-
--- to make them play, simply pass the sound data into love.audio.newSource
-local c5_square_src = love.audio.newSource(c5_square)
-c5_square_src:play()
+local nes = chirp.new_nes() -- creates a NES instance
+local gb = chirp.new_gb() -- creates a Gameboy instance 
+local noise = chirp.new_noise() -- creates a noise instance
 ```
 
-If you're looking to emulate the NES sound, your typical duty cycles will be:
-- 0.125 for 12.5%
-- 0.25 for 25%
-- 0.50 for 50%
-
-Chirp is also capable of "gameboy" wave generation. With this type, you need to supply an addition parameter table containing the wave table data (32 numbers from 0-15) and a volume shift (0-3). It looks like this.
+Once this is done, you call `:new_wave` on the instance. Each type has their own parameters. The envelope is a sequence of numbers representing the volume steps, and also controls the duration. It can be used as a kind of ADSR envelope.
 
 ```lua
--- wave table to simulate the iconic "fat bass" sound where it dips in the middle then ramps back up
-local fat_bass = {
-  15, 15, 15, 15, 15, 15, 15, 15,
-  13, 12, 11, 10,  9,  8,  7,  6,
-   6,  7,  8,  9, 10, 11, 12, 13,
-  15, 15, 15, 15, 15, 15, 15, 15
+local envelope = { 2, 5, 10, 10, 10, 8, 5, 4, 3, 2, 1, 1, 1 } -- short ramp up, hold at max, then slowly release
+-- nes requires a wave_type (square, sawtooth, triangle)
+-- duty cycle examples would be 0.125 for 12.5%, 0.25 for 25% and 0.50 for 50%
+local c4 = nes:new_wave(wave_type, note, duty_cycle, envelope)
+
+-- gameboy requires a params table which holds the wavetable and volume shift data
+local params = {
+	wavetable = {
+		15, 15, 15, 15, 15, 15, 15, 15,   -- sustained high at start
+  		13, 12, 11, 10,  9,  8,  7,  6,   -- gradual dip
+   		6,  7,  8,  9, 10, 11, 12, 13,   -- ramp back up
+  		15, 15, 15, 15, 15, 15, 15, 15    -- sustained high at end
+  	},
+	volume_shift = 0 -- 0-3
 }
 
-local mybass_c4 = chirp.new_wave("gameboy", "C4", nil, 1, 1, { wavetable = fat_bass, volume_shift = 0 })
+local c4 = gb:new_wave(note, envelope, params)
+
+-- noise just requires the note and envelope
+-- with just a single value in the evelope table it will be a quick burst
+-- I like to use lower numbers here as noise is quite loud by default
+local bang = noise:new_wave(note, { 2 })
 ```
 
-And that's it! For reference, here are some basic square wave tables to get you started
+Chirp supplies the sound data, but you'll need to create a source to make it playable
+
+```lua
+local c4 = love.audio.newSource(gb:new_wave(note, envelope, params), "static")
+c4:play()
+```
+
+It's really that simple.
+
+Here are some basic square wave tables for the gameboy to get you started
 
 ```lua
 -- 12.5%
